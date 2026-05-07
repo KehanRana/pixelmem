@@ -1,12 +1,10 @@
 "use client";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ClusterStrip } from "@/components/ClusterStrip";
 import { api } from "@/lib/api";
 import type { ClustersResponse } from "@/lib/types";
 
 export default function ClustersPage() {
-  const router = useRouter();
   const [data, setData] = useState<ClustersResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,68 +22,75 @@ export default function ClustersPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await api.clusters(12, false);
+        if (!cancelled) setData(res);
+      } catch (e) {
+        if (!cancelled) setError(String(e));
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, []);
 
   return (
-    <div className="min-h-screen bg-white dark:bg-zinc-950">
-
-      <header className="flex items-center justify-between px-6 py-4 border-b border-zinc-100 dark:border-zinc-800">
+    <main className="px-10 py-8 max-w-5xl">
+      <header className="mb-6 flex items-end justify-between gap-4">
+        <div>
+          <h1 className="text-[22px] font-semibold tracking-tight text-[var(--foreground)]">
+            Clusters
+          </h1>
+          <p className="mt-1 text-sm text-zinc-500">
+            {data
+              ? `${data.image_count} photos grouped into ${data.n_clusters} visual clusters.`
+              : "Visual groupings of your library."}
+          </p>
+        </div>
         <button
-          onClick={() => router.push("/explorer")}
-          className="text-sm text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 transition-colors"
-        >
-          ← Explorer
-        </button>
-        <h1 className="text-sm font-medium text-zinc-700 dark:text-zinc-300">
-          Memory clusters
-        </h1>
-        <button
+          type="button"
           onClick={() => load(true)}
           disabled={loading}
-          className="text-sm text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 disabled:opacity-40 transition-colors"
+          className="text-sm font-medium text-zinc-600 hover:text-zinc-900 disabled:opacity-40 transition-colors cursor-pointer"
         >
           Refresh
         </button>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        {loading && (
-          <div className="space-y-4">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-40 rounded-2xl bg-zinc-100 dark:bg-zinc-800 animate-pulse"
-              />
-            ))}
-          </div>
-        )}
+      {loading && (
+        <div className="space-y-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div
+              key={i}
+              className="h-40 rounded-2xl bg-zinc-100 animate-pulse"
+            />
+          ))}
+        </div>
+      )}
 
-        {error && (
-          <div className="text-center py-16">
-            <p className="text-red-500 text-sm mb-4">{error}</p>
-            <button
-              onClick={() => load()}
-              className="text-sm text-violet-600 hover:underline"
-            >
-              Try again
-            </button>
-          </div>
-        )}
+      {error && (
+        <div className="text-center py-16">
+          <p className="text-red-500 text-sm mb-4">{error}</p>
+          <button
+            type="button"
+            onClick={() => load()}
+            className="text-sm text-violet-600 hover:underline cursor-pointer"
+          >
+            Try again
+          </button>
+        </div>
+      )}
 
-        {data && !loading && (
-          <>
-            <p className="text-sm text-zinc-400 mb-6">
-              {data.image_count} photos grouped into {data.n_clusters} visual clusters.
-              Click any photo to explore similar images.
-            </p>
-            <div className="space-y-4">
-              {data.clusters.map((cluster, i) => (
-                <ClusterStrip key={cluster.cluster_id} cluster={cluster} index={i} />
-              ))}
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+      {data && !loading && (
+        <div className="space-y-4">
+          {data.clusters.map((cluster, i) => (
+            <ClusterStrip key={cluster.cluster_id} cluster={cluster} index={i} />
+          ))}
+        </div>
+      )}
+    </main>
   );
 }
