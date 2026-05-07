@@ -28,6 +28,7 @@ backend/storage/thumbnails/
 
 # Local test fixtures (not committed)
 backend/test_images/
+scripts/
 
 # Hugging Face / Torch caches (if ever written locally)
 .cache/
@@ -60,3 +61,5 @@ Thumbs.db
 # Claude
 .claude/
 CLAUDE.md
+
+#scripts
