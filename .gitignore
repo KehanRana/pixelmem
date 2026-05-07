@@ -1,0 +1,62 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+
+# PixelMem runtime storage
+backend/storage/pixelmem.db
+backend/storage/faiss.index
+backend/storage/faiss_ids.npy
+backend/storage/cluster_cache.json
+backend/storage/images/
+backend/storage/thumbnails/
+
+# Local test fixtures (not committed)
+backend/test_images/
+
+# Hugging Face / Torch caches (if ever written locally)
+.cache/
+*.bin
+
+# Node / Next.js
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/.turbo/
+frontend/next-env.d.ts
+frontend/*.tsbuildinfo
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# IDE / editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude
+.claude/
+CLAUDE.md
