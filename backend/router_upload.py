@@ -165,20 +165,42 @@ def serve_original(image_id: str, db: Session = Depends(get_db)):
 
 
 @router.get("/images")
-def list_images(status: str = None, limit: int = 100, db: Session = Depends(get_db)):
+def list_images(
+    status: str = None,
+    offset: int = 0,
+    limit: int = 60,
+    db: Session = Depends(get_db),
+):
+    if limit < 1 or limit > 500:
+        raise HTTPException(status_code=400, detail="limit must be between 1 and 500")
+    if offset < 0:
+        raise HTTPException(status_code=400, detail="offset must be >= 0")
+
     query = db.query(Image)
     if status:
         query = query.filter(Image.embedding_status == status)
-    images = query.order_by(Image.created_at.desc()).limit(limit).all()
-    return [
-        {
-            "id": img.id,
-            "filename": img.filename,
-            "width": img.width,
-            "height": img.height,
-            "embedding_status": img.embedding_status,
-            "thumbnail_url": f"/api/thumbnails/{img.id}",
-            "created_at": img.created_at.isoformat(),
-        }
-        for img in images
-    ]
+
+    total = query.count()
+    images = (
+        query.order_by(Image.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+    return {
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+        "images": [
+            {
+                "id": img.id,
+                "filename": img.filename,
+                "width": img.width,
+                "height": img.height,
+                "embedding_status": img.embedding_status,
+                "thumbnail_url": f"/api/thumbnails/{img.id}",
+                "created_at": img.created_at.isoformat(),
+            }
+            for img in images
+        ],
+    }

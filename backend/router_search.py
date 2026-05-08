@@ -3,9 +3,59 @@ from sqlalchemy.orm import Session
 
 from backend.database import get_db
 from backend.models import Image, EmbeddingStatus
-from backend.router_upload import index_manager
+from backend.router_upload import embedding_service, index_manager
 
 router = APIRouter(prefix="/api", tags=["search"])
+
+
+@router.get("/search/text")
+def search_by_text(
+    q: str,
+    k: int = 20,
+    db: Session = Depends(get_db),
+):
+    """
+    Free-text search using CLIP's joint text/image embedding space.
+    Returns the k images whose visual embedding is closest to the
+    text query.
+    """
+    q = (q or "").strip()
+    if not q:
+        raise HTTPException(status_code=400, detail="Query string 'q' is required")
+
+    try:
+        vector = embedding_service.embed_text(q)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    raw_results = index_manager.search(vector, k=k)
+
+    result_ids = [r["image_id"] for r in raw_results]
+    score_map = {r["image_id"]: r["score"] for r in raw_results}
+
+    db_images = db.query(Image).filter(Image.id.in_(result_ids)).all()
+    image_map = {img.id: img for img in db_images}
+
+    results = []
+    for img_id in result_ids:
+        img = image_map.get(img_id)
+        if not img:
+            continue
+        results.append({
+            "id": img.id,
+            "filename": img.filename,
+            "width": img.width,
+            "height": img.height,
+            "similarity_score": round(score_map[img_id], 4),
+            "thumbnail_url": f"/api/thumbnails/{img.id}",
+            "original_url": f"/api/images/{img.id}/original",
+        })
+
+    return {
+        "query": q,
+        "total_results": len(results),
+        "results": results,
+    }
 
 
 @router.get("/search/{image_id}")

@@ -51,3 +51,30 @@ class EmbeddingService:
         if norm == 0:
             raise ValueError(f"Zero-norm embedding for {path} — file may be corrupt")
         return vector / norm
+
+    def embed_text(self, text: str) -> np.ndarray:
+        """
+        Embed a natural-language query into the same 512-dim CLIP space
+        used for images. Returns an L2-normalised float32 vector.
+        """
+        text = (text or "").strip()
+        if not text:
+            raise ValueError("Empty query")
+
+        inputs = self.processor(
+            text=[text], return_tensors="pt", padding=True, truncation=True
+        ).to(self.device)
+
+        with torch.no_grad():
+            text_outputs = self.model.text_model(
+                input_ids=inputs["input_ids"],
+                attention_mask=inputs.get("attention_mask"),
+            )
+            pooled = text_outputs.pooler_output  # (1, hidden_dim)
+            features = self.model.text_projection(pooled)  # (1, 512)
+
+        vector = features.squeeze().cpu().numpy().astype(np.float32)
+        norm = np.linalg.norm(vector)
+        if norm == 0:
+            raise ValueError("Zero-norm text embedding")
+        return vector / norm
