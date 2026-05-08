@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ExplorerToolbar } from "@/components/ExplorerToolbar";
 import { ImageGrid } from "@/components/ImageGrid";
 import { SelectedPanel } from "@/components/SelectedPanel";
@@ -23,6 +24,9 @@ const VIEW_OPTIONS = ["Grid", "Orbit", "Stream"] as const;
 type View = (typeof VIEW_OPTIONS)[number];
 
 export default function ExplorerPage() {
+  const searchParams = useSearchParams();
+  const startParam = searchParams.get("start");
+
   const [allImages, setAllImages] = useState<ImageRecord[]>([]);
   const [anchorDetail, setAnchorDetail] = useState<ImageRecord | null>(null);
   const [results, setResults] = useState<SearchResult[]>([]);
@@ -32,36 +36,6 @@ export default function ExplorerPage() {
   const [view, setView] = useState<View>("Grid");
   const [loading, setLoading] = useState(false);
   const [initialLoad, setInitialLoad] = useState(true);
-
-  // Initial load — list ready images, kick off cluster fetch, auto-anchor
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const imgs = await api.listImages("ready");
-        if (cancelled) return;
-        setAllImages(imgs);
-
-        api
-          .clusters(12, false)
-          .then((c) => !cancelled && setClusters(c))
-          .catch(() => {});
-
-        const params = new URLSearchParams(window.location.search);
-        const startId = params.get("start") ?? imgs[0]?.id;
-        if (startId) {
-          const startImg = imgs.find((i) => i.id === startId);
-          if (startImg) {
-            await loadAnchor(startImg.id, k, /*pushTrail=*/ false);
-          }
-        }
-      } finally {
-        if (!cancelled) setInitialLoad(false);
-      }
-    })();
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadAnchor = useCallback(
     async (id: string, kVal: number, pushTrail: boolean) => {
@@ -89,6 +63,44 @@ export default function ExplorerPage() {
     },
     [anchorDetail]
   );
+
+  // Initial load — list ready images and kick off cluster fetch
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const imgs = await api.listImages("ready");
+        if (cancelled) return;
+        setAllImages(imgs);
+
+        api
+          .clusters(12, false)
+          .then((c) => !cancelled && setClusters(c))
+          .catch(() => {});
+
+        // Pick the first image as a default anchor only if there's no
+        // ?start= deep link. The other effect handles the targeted case.
+        if (!startParam && imgs[0]) {
+          await loadAnchor(imgs[0].id, k, /*pushTrail=*/ false);
+        }
+      } finally {
+        if (!cancelled) setInitialLoad(false);
+      }
+    })();
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // React to ?start= changes — fires both on initial mount with a deep link
+  // and on every subsequent navigation that updates the param (e.g., a
+  // Clusters → Explorer click while the route is already in the cache).
+  useEffect(() => {
+    if (!startParam) return;
+    queueMicrotask(() => {
+      void loadAnchor(startParam, k, /*pushTrail=*/ false);
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [startParam]);
 
   const selectImage = useCallback(
     (img: GridItem) => {
