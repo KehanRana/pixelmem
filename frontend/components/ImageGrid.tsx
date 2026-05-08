@@ -29,7 +29,10 @@ export function ImageGrid({
     gridRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [images]);
 
-  if (loading) {
+  // Only show the skeleton on a cold load. Once we have images on screen,
+  // keep them visible across re-fetches and just dim/disable interaction —
+  // otherwise every click flashes white between the skeleton and the next grid.
+  if (loading && images.length === 0) {
     return (
       <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3">
         {Array.from({ length: 12 }).map((_, i) => (
@@ -53,7 +56,10 @@ export function ImageGrid({
   return (
     <div
       ref={gridRef}
-      className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3"
+      className={[
+        "grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 transition-opacity duration-150",
+        loading ? "opacity-60 pointer-events-none" : "",
+      ].join(" ")}
     >
       {images.map((img, i) => {
         const isSelected = img.id === selectedId;

@@ -1,8 +1,10 @@
 import type {
     ClustersResponse,
     ImageRecord,
+    ImagesPage,
     SearchResponse,
     SystemStatus,
+    TextSearchResponse,
   } from "./types";
   
   const BASE = "/api";
@@ -26,13 +28,24 @@ import type {
       );
     },
   
-    listImages: (status?: string) =>
-      request<ImageRecord[]>(`/images${status ? `?status=${status}` : ""}`),
-  
+    listImages: (opts: { status?: string; offset?: number; limit?: number } = {}) => {
+      const params = new URLSearchParams();
+      if (opts.status) params.set("status", opts.status);
+      if (opts.offset != null) params.set("offset", String(opts.offset));
+      if (opts.limit != null) params.set("limit", String(opts.limit));
+      const qs = params.toString();
+      return request<ImagesPage>(`/images${qs ? `?${qs}` : ""}`);
+    },
+
     getImage: (id: string) => request<ImageRecord>(`/images/${id}`),
-  
+
     search: (imageId: string, k = 20) =>
       request<SearchResponse>(`/search/${imageId}?k=${k}`),
+
+    searchText: (q: string, k = 24) =>
+      request<TextSearchResponse>(
+        `/search/text?q=${encodeURIComponent(q)}&k=${k}`
+      ),
   
     clusters: (n = 12, force = false) =>
       request<ClustersResponse>(

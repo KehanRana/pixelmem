@@ -23,6 +23,19 @@ export interface SearchResponse {
   results: SearchResult[];
 }
 
+export interface TextSearchResponse {
+  query: string;
+  total_results: number;
+  results: SearchResult[];
+}
+
+export interface ImagesPage {
+  total: number;
+  offset: number;
+  limit: number;
+  images: ImageRecord[];
+}
+
 export interface ClusterMember {
   id: string;
   filename: string;
