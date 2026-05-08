@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { toast } from "sonner";
 import { ExplorerToolbar } from "@/components/ExplorerToolbar";
 import { ImageGrid } from "@/components/ImageGrid";
 import { SelectedPanel } from "@/components/SelectedPanel";
@@ -57,6 +59,10 @@ export default function ExplorerPage() {
         }
         setAnchorDetail(detail);
         setResults(search.results);
+      } catch (err) {
+        toast.error("Couldn't load similar images", {
+          description: err instanceof Error ? err.message : String(err),
+        });
       } finally {
         setLoading(false);
       }
@@ -82,6 +88,12 @@ export default function ExplorerPage() {
         // ?start= deep link. The other effect handles the targeted case.
         if (!startParam && imgs[0]) {
           await loadAnchor(imgs[0].id, k, /*pushTrail=*/ false);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          toast.error("Couldn't load your library", {
+            description: err instanceof Error ? err.message : String(err),
+          });
         }
       } finally {
         if (!cancelled) setInitialLoad(false);
@@ -137,7 +149,14 @@ export default function ExplorerPage() {
     (newK: number) => {
       setK(newK);
       if (anchorDetail) {
-        void api.search(anchorDetail.id, newK).then((res) => setResults(res.results));
+        api
+          .search(anchorDetail.id, newK)
+          .then((res) => setResults(res.results))
+          .catch((err) =>
+            toast.error("Search failed", {
+              description: err instanceof Error ? err.message : String(err),
+            })
+          );
       }
     },
     [anchorDetail]
@@ -219,13 +238,30 @@ export default function ExplorerPage() {
             </div>
           </header>
 
-          <ImageGrid
-            images={anchorDetail ? results : allImages}
-            selectedId={anchorDetail?.id ?? null}
-            onSelect={selectImage}
-            loading={initialLoad || loading}
-            highlightTop={Boolean(anchorDetail) && results.length > 0}
-          />
+          {!initialLoad && !anchorDetail && allImages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center text-center py-24 px-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40">
+              <p className="text-base font-medium text-[var(--foreground)]">
+                Your library is empty
+              </p>
+              <p className="mt-1.5 text-sm text-zinc-500 max-w-sm">
+                Upload some photos to start exploring visual neighbours and clusters.
+              </p>
+              <Link
+                href="/upload"
+                className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+              >
+                Upload photos
+              </Link>
+            </div>
+          ) : (
+            <ImageGrid
+              images={anchorDetail ? results : allImages}
+              selectedId={anchorDetail?.id ?? null}
+              onSelect={selectImage}
+              loading={initialLoad || loading}
+              highlightTop={Boolean(anchorDetail) && results.length > 0}
+            />
+          )}
         </main>
       </div>
     </div>

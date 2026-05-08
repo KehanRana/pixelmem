@@ -1,6 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ClusterPile, UnsortedPile } from "@/components/ClusterPile";
 import { SegmentedPill } from "@/components/SegmentedPill";
 import { api } from "@/lib/api";
@@ -34,7 +36,9 @@ export default function ClustersPage() {
       setData(clusters);
       setStatus(sys);
     } catch (e) {
-      setError(String(e));
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      toast.error("Couldn't load clusters", { description: msg });
     } finally {
       setLoading(false);
     }
@@ -52,7 +56,11 @@ export default function ClustersPage() {
         setData(clusters);
         setStatus(sys);
       } catch (e) {
-        if (!cancelled) setError(String(e));
+        if (!cancelled) {
+          const msg = e instanceof Error ? e.message : String(e);
+          setError(msg);
+          toast.error("Couldn't load clusters", { description: msg });
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -127,7 +135,24 @@ export default function ClustersPage() {
         </div>
       )}
 
-      {data && !error && (
+      {data && !error && data.image_count === 0 && (
+        <div className="flex flex-col items-center justify-center text-center py-24 px-6 rounded-2xl border border-dashed border-[var(--border)] bg-[var(--surface)]/40">
+          <p className="text-base font-medium text-[var(--foreground)]">
+            Nothing to cluster yet
+          </p>
+          <p className="mt-1.5 text-sm text-zinc-500 max-w-sm">
+            Upload some photos and they&apos;ll get auto-grouped into visual piles here.
+          </p>
+          <Link
+            href="/upload"
+            className="mt-5 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-violet-600 text-white text-sm font-medium hover:bg-violet-700 transition-colors"
+          >
+            Upload photos
+          </Link>
+        </div>
+      )}
+
+      {data && !error && data.image_count > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-8 gap-y-10">
           {data.clusters.map((c, i) => (
             <ClusterPile key={c.cluster_id} cluster={c} index={i} onPick={onPick} />

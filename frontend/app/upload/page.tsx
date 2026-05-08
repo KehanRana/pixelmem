@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
 import { DropZone } from "@/components/DropZone";
 import { RecentLibraries } from "@/components/RecentLibraries";
 import { api } from "@/lib/api";
@@ -66,6 +67,7 @@ export default function UploadPage() {
     const newEntries: FileEntry[] = files.map((f) => ({ name: f.name, state: "queued" }));
     setEntries((prev) => [...prev, ...newEntries]);
 
+    let succeeded = 0;
     const BATCH = 5;
     for (let i = 0; i < files.length; i += BATCH) {
       const batch = files.slice(i, i + BATCH);
@@ -81,6 +83,7 @@ export default function UploadPage() {
 
       try {
         await api.upload(batch);
+        succeeded += batch.length;
         setEntries((prev) =>
           prev.map((e) =>
             batchNames.includes(e.name) && e.state === "uploading"
@@ -89,16 +92,23 @@ export default function UploadPage() {
           )
         );
       } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
         setEntries((prev) =>
           prev.map((e) =>
             batchNames.includes(e.name) && e.state === "uploading"
-              ? { ...e, state: "error", error: String(err) }
+              ? { ...e, state: "error", error: msg }
               : e
           )
         );
+        toast.error(`Upload failed for ${batch.length} file${batch.length === 1 ? "" : "s"}`, {
+          description: msg,
+        });
       }
     }
     setUploading(false);
+    if (succeeded > 0) {
+      toast.success(`Queued ${succeeded} file${succeeded === 1 ? "" : "s"} for embedding`);
+    }
 
     if (!pollRef.current) {
       pollRef.current = setInterval(async () => {
