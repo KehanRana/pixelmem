@@ -49,7 +49,7 @@ function SearchField({
     >
       <div className="relative flex-1">
         <input
-          type="search"
+          type="text"
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Search by description… (e.g. ‘sunset over water’)"
