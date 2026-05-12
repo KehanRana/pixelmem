@@ -11,7 +11,7 @@ latency for HNSW.
 
 Usage (from repo root, after you've uploaded some images):
     source venv/bin/activate
-    python benchmarking/ab_compare.py --queries 200 --k 20
+    python testing/ab_comparison/ab_compare.py --queries 200 --k 20
 
 Knobs match the env vars in backend/index_manager.py so the comparison
 reflects whatever HNSW config you plan to ship.
@@ -28,7 +28,7 @@ import faiss
 import numpy as np
 
 
-REPO_ROOT = Path(__file__).resolve().parent.parent
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 INDEX_PATH = REPO_ROOT / "backend" / "storage" / "faiss.index"
 ID_MAP_PATH = REPO_ROOT / "backend" / "storage" / "faiss_ids.npy"
 REPORT_PATH = REPO_ROOT / "scripts" / "ab_comparison" / "ab_report.md"

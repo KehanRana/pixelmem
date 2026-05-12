@@ -9,7 +9,7 @@ PixelMem benchmark — measures two things:
 
 Run from the repo root:
     source venv/bin/activate
-    python benchmarking/benchmark.py --sizes 1000 10000 50000 --queries 200
+    python testing/benchmarking/benchmark.py --sizes 1000 10000 50000 --queries 200
 
 A markdown report is printed to stdout and written to scripts/benchmark_report.md.
 """
@@ -31,8 +31,8 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIM = 512
 IMAGE_DIR = REPO_ROOT / "backend" / "test_images"
-REPORT_PATH = REPO_ROOT / "scripts" / "benchmarking" / "benchmark_report.md"
-JSON_PATH = REPO_ROOT / "scripts" / "benchmarking" / "benchmark_results.json"
+REPORT_PATH = REPO_ROOT / "testing" / "benchmarking" / "benchmark_report.md"
+JSON_PATH = REPO_ROOT / "testing" / "benchmarking" / "benchmark_results.json"
 
 
 # ---------- helpers ----------
