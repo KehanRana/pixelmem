@@ -31,8 +31,8 @@ import numpy as np
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DIM = 512
 IMAGE_DIR = REPO_ROOT / "backend" / "test_images"
-REPORT_PATH = REPO_ROOT / "scripts" / "benchmark_report.md"
-JSON_PATH = REPO_ROOT / "scripts" / "benchmark_results.json"
+REPORT_PATH = REPO_ROOT / "benchmarking" / "benchmark_report.md"
+JSON_PATH = REPO_ROOT / "benchmarking" / "benchmark_results.json"
 
 
 # ---------- helpers ----------
