@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,6 +8,13 @@ from backend.database import engine, Base
 from backend.router_upload import router as upload_router
 from backend.router_search import router as search_router
 from backend.router_cluster import router as cluster_router
+
+# Ensure the storage subdirs exist at runtime. A volume mount (e.g. Railway
+# mounting at /app/backend/storage) overlays an empty filesystem on top of
+# whatever the Docker image created at build time, so this can't be a build
+# step.
+for sub in ("images", "thumbnails"):
+    (Path("backend/storage") / sub).mkdir(parents=True, exist_ok=True)
 
 Base.metadata.create_all(bind=engine)
 
