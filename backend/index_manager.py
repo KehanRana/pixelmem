@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 import faiss
@@ -7,10 +8,37 @@ EMBEDDING_DIM = 512
 INDEX_PATH = Path("backend/storage/faiss.index")
 ID_MAP_PATH = Path("backend/storage/faiss_ids.npy")
 
+# Index kind is selected at startup via env var. Switching kinds requires
+# deleting the existing faiss.index + faiss_ids.npy on disk first; otherwise
+# the persisted index is loaded as-is regardless of this setting.
+INDEX_KIND = os.environ.get("PIXELMEM_INDEX_KIND", "flat").lower()
+HNSW_M = int(os.environ.get("PIXELMEM_HNSW_M", "32"))
+HNSW_EF_CONSTRUCTION = int(os.environ.get("PIXELMEM_HNSW_EF_CONSTRUCTION", "80"))
+HNSW_EF_SEARCH = int(os.environ.get("PIXELMEM_HNSW_EF_SEARCH", "64"))
+
+
+def _build_index() -> faiss.Index:
+    if INDEX_KIND == "hnsw":
+        idx = faiss.IndexHNSWFlat(EMBEDDING_DIM, HNSW_M, faiss.METRIC_INNER_PRODUCT)
+        idx.hnsw.efConstruction = HNSW_EF_CONSTRUCTION
+        idx.hnsw.efSearch = HNSW_EF_SEARCH
+        return idx
+    if INDEX_KIND != "flat":
+        print(f"[IndexManager] Unknown PIXELMEM_INDEX_KIND={INDEX_KIND!r}, using flat")
+    return faiss.IndexFlatIP(EMBEDDING_DIM)
+
+
+def _apply_runtime_params(index: faiss.Index) -> None:
+    # efSearch is a query-time knob and isn't restored by read_index, so
+    # re-apply it on every load for HNSW indexes.
+    if isinstance(index, faiss.IndexHNSWFlat):
+        index.hnsw.efSearch = HNSW_EF_SEARCH
+
 
 class IndexManager:
     """
-    Thin wrapper around a FAISS IndexFlatIP index.
+    Thin wrapper around a FAISS index (flat or HNSW, selected via the
+    PIXELMEM_INDEX_KIND env var).
 
     Maintains a parallel list (self.image_ids) so we can map FAISS integer
     positions back to UUID image IDs from our database.
@@ -23,13 +51,17 @@ class IndexManager:
         if INDEX_PATH.exists() and ID_MAP_PATH.exists():
             print("[IndexManager] Loading existing index from disk ...")
             self.index = faiss.read_index(str(INDEX_PATH))
+            _apply_runtime_params(self.index)
             self.image_ids: list[str] = np.load(
                 str(ID_MAP_PATH), allow_pickle=True
             ).tolist()
-            print(f"[IndexManager] Loaded {self.index.ntotal} vectors")
+            print(
+                f"[IndexManager] Loaded {self.index.ntotal} vectors "
+                f"(kind={type(self.index).__name__})"
+            )
         else:
-            print("[IndexManager] Creating new index ...")
-            self.index = faiss.IndexFlatIP(EMBEDDING_DIM)
+            print(f"[IndexManager] Creating new index (kind={INDEX_KIND}) ...")
+            self.index = _build_index()
             self.image_ids: list[str] = []
 
     def add(self, image_id: str, vector: np.ndarray) -> None:
@@ -71,6 +103,8 @@ class IndexManager:
         if image_id not in self.image_ids:
             return None
         idx = self.image_ids.index(image_id)
+        # Both IndexFlatIP and IndexHNSWFlat store raw vectors and support
+        # reconstruct(); IVF-family indexes would not.
         vector = np.zeros((1, EMBEDDING_DIM), dtype=np.float32)
         self.index.reconstruct(idx, vector[0])
         return vector[0]
