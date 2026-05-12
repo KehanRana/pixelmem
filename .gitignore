@@ -28,7 +28,7 @@ backend/storage/thumbnails/
 
 # Local test fixtures (not committed)
 backend/test_images/
-scripts/
+seeding/
 
 # Hugging Face / Torch caches (if ever written locally)
 .cache/
