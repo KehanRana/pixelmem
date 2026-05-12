@@ -1,0 +1,38 @@
+.git
+.gitignore
+.venv
+venv
+__pycache__
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/.mypy_cache
+
+# Local data — never bake into the image. Railway volume holds these in prod.
+backend/storage/
+backend/test_images/
+
+# Frontend has its own image
+frontend/
+scripts/
+node_modules/
+
+# Env files — never bake into images; pass values at run/build time instead.
+.env
+.env.*
+!.env.example
+
+# Editor / OS noise
+.vscode
+.idea
+.DS_Store
+**/.DS_Store
+
+# Docs that don't need to ship in the runtime image
+README.md
+CLAUDE.md
+DEPLOY.md
+testing/benchmarking/benchmark_report.md
+testing/ab_comparison/ab_report.md
+testing/benchmarking/benchmark_results.json
+testing/ab_comparison/ab_results.json

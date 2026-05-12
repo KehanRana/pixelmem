@@ -1,5 +1,5 @@
 "use client";
-import { useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
@@ -28,6 +28,16 @@ type View = (typeof VIEW_OPTIONS)[number];
 const PAGE_SIZE = 60;
 
 export default function ExplorerPage() {
+  // useSearchParams must sit inside a Suspense boundary so Next.js can prerender
+  // the surrounding shell without bailing out the whole route.
+  return (
+    <Suspense fallback={null}>
+      <ExplorerPageInner />
+    </Suspense>
+  );
+}
+
+function ExplorerPageInner() {
   const searchParams = useSearchParams();
   const startParam = searchParams.get("start");
 

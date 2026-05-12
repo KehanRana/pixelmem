@@ -1,3 +1,5 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -10,9 +12,14 @@ Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Image Memory Search", version="0.1.0")
 
+# Comma-separated list of allowed origins. Defaults to the local dev frontend;
+# set PIXELMEM_CORS_ORIGINS to the Railway frontend URL in production.
+_origins_env = os.environ.get("PIXELMEM_CORS_ORIGINS", "http://localhost:3000")
+allow_origins = [o.strip() for o in _origins_env.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=allow_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
