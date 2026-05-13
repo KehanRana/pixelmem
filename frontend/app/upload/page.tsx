@@ -162,7 +162,7 @@ export default function UploadPage() {
         )}
       </section>
 
-      <RecentLibraries />
+      <RecentLibraries photos={status?.total ?? null} />
     </div>
   );
 }
