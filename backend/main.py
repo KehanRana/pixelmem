@@ -5,10 +5,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.seed import maybe_seed
-from backend.database import engine, Base
-from backend.router_upload import router as upload_router
-from backend.router_search import router as search_router
-from backend.router_cluster import router as cluster_router
 
 # Ensure the storage subdirs exist at runtime. A volume mount (e.g. Railway
 # mounting at /app/backend/storage) overlays an empty filesystem on top of
@@ -21,6 +17,11 @@ for sub in ("images", "thumbnails"):
 # router_upload is imported — that module instantiates IndexManager at import
 # time, which reads faiss.index from disk.
 maybe_seed()
+
+from backend.database import engine, Base  # noqa: E402
+from backend.router_upload import router as upload_router  # noqa: E402
+from backend.router_search import router as search_router  # noqa: E402
+from backend.router_cluster import router as cluster_router  # noqa: E402
 
 Base.metadata.create_all(bind=engine)
 
