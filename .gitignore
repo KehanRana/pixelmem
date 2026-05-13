@@ -28,7 +28,10 @@ backend/storage/thumbnails/
 
 # Local test fixtures (not committed)
 backend/test_images/
-seeding/
+
+# Seeding: track the build script and the bundled seed snapshot, but not the
+# raw HF downloads it uses as input.
+seeding/_raw_images/
 
 # Hugging Face / Torch caches (if ever written locally)
 .cache/
