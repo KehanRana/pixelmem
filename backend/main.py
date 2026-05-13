@@ -4,6 +4,7 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from backend.seed import maybe_seed
 from backend.database import engine, Base
 from backend.router_upload import router as upload_router
 from backend.router_search import router as search_router
@@ -15,6 +16,11 @@ from backend.router_cluster import router as cluster_router
 # step.
 for sub in ("images", "thumbnails"):
     (Path("backend/storage") / sub).mkdir(parents=True, exist_ok=True)
+
+# Copy the bundled sample dataset into storage on first boot. Must run before
+# router_upload is imported — that module instantiates IndexManager at import
+# time, which reads faiss.index from disk.
+maybe_seed()
 
 Base.metadata.create_all(bind=engine)
 

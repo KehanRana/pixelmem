@@ -28,6 +28,12 @@ RUN python -c "from transformers import CLIPModel, CLIPProcessor; \
 
 COPY backend ./backend
 
+# Sample-dataset snapshot lives at seeding/seed_artifacts/. backend/seed.py
+# copies it into backend/storage/ on first boot when storage is empty
+# (e.g. a fresh Railway volume). If the artifacts dir is absent, seeding is
+# a no-op and the app starts with an empty library.
+COPY seeding ./seeding
+
 # Storage dirs that router_upload.py writes to. On Railway, mount a volume
 # at /app/backend/storage so uploads + index survive redeploys.
 RUN mkdir -p backend/storage/images backend/storage/thumbnails
